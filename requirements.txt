@@ -1,0 +1,12 @@
+langchain-core
+langgraph
+langchain-google-genai
+langchain-openai
+pydantic>=2.0
+chromadb
+sentence-transformers
+pymupdf
+pandas
+streamlit
+pytest
+python-dotenv
