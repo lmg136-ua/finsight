@@ -1,0 +1,17 @@
+[
+    {
+        "question": "What is the primary business model of Microsoft?",
+        "expected_company": "Microsoft",
+        "expected_facts": ["Licenses software", "Cloud services", "Hardware"]
+    },
+    {
+        "question": "What are the biggest risks management identifies for Alphabet?",
+        "expected_company": "Alphabet",
+        "expected_facts": ["Competition in AI", "Regulatory scrutiny", "Ad revenue reliance"]
+    },
+    {
+        "question": "Compare the operating profitability of Microsoft and Alphabet.",
+        "expected_company": "Microsoft, Alphabet",
+        "expected_facts": ["Microsoft margin", "Alphabet margin", "Comparison of the two"]
+    }
+]
