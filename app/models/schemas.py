@@ -20,6 +20,7 @@ class RetrievedChunk(BaseModel):
 class ResearchTask(BaseModel):
     description: str = Field(description="Description of the information to retrieve or analyze")
     company: Optional[str] = Field(None, description="Company this task relates to, if specific")
+    year: Optional[int] = Field(None, description="Specific filing year required, if any")
     keywords: List[str] = Field(default_factory=list, description="Keywords for retrieval")
 
 class ResearchPlan(BaseModel):
@@ -39,13 +40,23 @@ class FactualClaim(BaseModel):
 
 class ClaimVerification(BaseModel):
     claim: str = Field(description="The claim being verified")
-    status: str = Field(description="SUPPORTED, PARTIALLY_SUPPORTED, or UNSUPPORTED")
+    status: str = Field(description="SUPPORTED, PARTIALLY_SUPPORTED, UNSUPPORTED, or INSUFFICIENT_EVIDENCE")
     explanation: str = Field(description="Explanation for the verification status")
 
 class VerificationResult(BaseModel):
     verifications: List[ClaimVerification] = Field(description="List of verified claims")
     all_supported: bool = Field(description="True if all important claims are SUPPORTED")
     feedback: str = Field(description="Feedback for the analyst if not all claims are supported")
+
+# Trace Schemas
+class RetrievalTrace(BaseModel):
+    company: Optional[str] = None
+    year: Optional[int] = None
+    attempt: int
+    query: str
+    method: str
+    candidates_retrieved: int
+    matched_files: List[str]
 
 # Graph State
 class GraphState(TypedDict):
@@ -56,4 +67,5 @@ class GraphState(TypedDict):
     verification_result: Optional[VerificationResult]
     final_answer: Optional[str]
     iteration_count: int
+    retrieval_traces: List[RetrievalTrace]
     chat_history: List[Dict[str, str]]

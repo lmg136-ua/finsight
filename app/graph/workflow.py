@@ -3,24 +3,56 @@ from app.models.schemas import GraphState
 from app.agents.planner import plan_query
 from app.agents.analyst import analyze_and_draft
 from app.agents.verifier import verify_claims
-from app.retrieval.retriever import FinSightRetriever
-
-retriever = FinSightRetriever()
+from app.retrieval.retriever import global_retriever as retriever
 
 def retrieve_node(state: GraphState) -> GraphState:
-    plan = state["plan"]
+    plan = state.get("plan")
     question = state["question"]
     
     all_chunks = []
+    traces = state.get("retrieval_traces", [])
+    attempt = state.get("iteration_count", 0) + 1
     
     if plan and plan.tasks:
         for task in plan.tasks:
             query = f"{task.description} {' '.join(task.keywords)}"
-            chunks = retriever.search(query, company=task.company, top_k=3)
+            
+            # Check if document exists before retrieval
+            filter_dict = {}
+            if task.company: filter_dict["company"] = task.company
+            if task.year: filter_dict["year"] = int(task.year)
+            
+            docs = retriever.vectorstore.get(where=filter_dict if filter_dict else None, include=["metadatas"])
+            matched_files = list(set([m["source_filename"] for m in docs["metadatas"] if m])) if docs and docs.get("metadatas") else []
+            
+            if not matched_files:
+                traces.append({
+                    "company": task.company,
+                    "year": task.year,
+                    "attempt": attempt,
+                    "query": query,
+                    "method": "hybrid (failed: not indexed)",
+                    "candidates_retrieved": 0,
+                    "matched_files": []
+                })
+                continue
+                
+            # Retrieve top 5 per company
+            chunks = retriever.search(query, company=task.company, year=task.year, top_k=5)
             all_chunks.extend(chunks)
+            
+            traces.append({
+                "company": task.company,
+                "year": task.year,
+                "attempt": attempt,
+                "query": query,
+                "method": "hybrid (bm25 + semantic)",
+                "candidates_retrieved": len(chunks),
+                "matched_files": matched_files
+            })
     else:
-        # Fallback if no plan
-        all_chunks = retriever.search(question, top_k=5)
+        fallback_chunks = retriever.search(question, top_k=5)
+        all_chunks.extend(fallback_chunks)
         
     # Deduplicate chunks based on text
     seen = set()
@@ -30,8 +62,8 @@ def retrieve_node(state: GraphState) -> GraphState:
             seen.add(chunk.text)
             unique_chunks.append(chunk)
             
-    # Keep top 10 unique chunks to avoid overflowing context
-    return {"retrieved_chunks": unique_chunks[:10]}
+    # Keep up to 8 unique pages (approx 4000 tokens) to stay well under the 8000 TPM limit
+    return {"retrieved_chunks": unique_chunks[:8], "retrieval_traces": traces}
 
 def finalize_answer(state: GraphState) -> GraphState:
     # Accept the draft as the final answer
@@ -43,8 +75,12 @@ def should_loop(state: GraphState):
     
     if ver_res.all_supported or iteration >= 2:
         return "finalize"
-    else:
-        return "re_analyze"
+    
+    # If evidence is missing, replan and retrieve again
+    if any(v.status == "INSUFFICIENT_EVIDENCE" for v in ver_res.verifications):
+        return "re_plan"
+        
+    return "re_analyze"
 
 def increment_iteration(state: GraphState) -> GraphState:
     return {"iteration_count": state.get("iteration_count", 0) + 1}
@@ -70,7 +106,8 @@ def build_graph():
         should_loop,
         {
             "finalize": "finalizer",
-            "re_analyze": "increment_iter"
+            "re_analyze": "increment_iter",
+            "re_plan": "planner"
         }
     )
     

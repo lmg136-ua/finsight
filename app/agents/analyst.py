@@ -50,7 +50,10 @@ def analyze_and_draft(state: GraphState) -> GraphState:
 You must ALWAYS base your answers on the provided context. NEVER invent financial numbers.
 Use the calculation tools when performing math. DO NOT do mental math for margins or growth rates.
 Cite your sources using the format [Filename, p. X].
-If the context is insufficient, state what is missing.
+CRITICAL: You MUST use the exact page number shown in the Document header. Do not hallucinate or guess the page number.
+If the context is insufficient, simply state: "The required evidence was not retrieved from the indexed documents." Do NOT ask for internet permission.
+
+Format comparison tables properly using markdown syntax with clear columns. Ensure there is proper spacing between markdown bold asterisks and subsequent text (e.g., "**Revenue** for FY" instead of "**Revenue**for FY").
 
 Below is the context:
 {context}
@@ -63,4 +66,8 @@ User Question: {question}"""
     
     result = agent.invoke({"messages": [("user", prompt)]})
     
-    return {"draft_answer": result["messages"][-1].content}
+    content = result["messages"][-1].content
+    if isinstance(content, list):
+        content = "\n".join(block.get("text", "") for block in content if isinstance(block, dict) and block.get("type") == "text")
+        
+    return {"draft_answer": content}

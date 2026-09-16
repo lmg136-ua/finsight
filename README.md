@@ -1,38 +1,40 @@
-# FinSight — Agentic Financial Research Assistant
+# FinSight — Enterprise Agentic Financial Research Assistant
 
-FinSight is a production-style agentic AI application for financial research, capable of answering complex financial questions across multiple companies with traceable evidence and citations.
+FinSight is a production-grade Agentic AI application designed for deep financial research. It answers complex financial queries across multiple companies with traceable evidence, strict citations, and a robust self-correcting RAG pipeline.
 
 ## Problem
 
-Financial analysts spend hours reading through lengthy 10-Ks and earnings reports, trying to extract specific metrics and qualitative assessments. Traditional keyword search is often insufficient for complex comparative queries (e.g., "Compare Microsoft and Alphabet's AI investment strategies"). Simple RAG "Chat with PDF" approaches often hallucinate financial figures or fail to synthesize cross-document information correctly.
+Financial analysts spend hours reading through lengthy 10-Ks and earnings reports, trying to extract specific metrics and qualitative assessments. Traditional keyword search is often insufficient for complex comparative queries (e.g., "Compare Microsoft and Alphabet's AI investment strategies"). Simple RAG "Chat with PDF" approaches often hallucinate financial figures, fail to synthesize cross-document information correctly, and split financial tables in half, leading to catastrophic data loss.
 
-## Why Agentic AI?
+## Enterprise Agentic Architecture
 
-An agentic approach allows the system to:
-1. **Plan:** Decompose a complex question into manageable retrieval tasks.
-2. **Retrieve & Compute:** Extract evidence and use a calculator tool to compute ratios and growth (preventing LLM arithmetic hallucination).
-3. **Verify:** Check the drafted answer against the original retrieved text, ensuring every claim is grounded. If claims are unsupported, the agent can loop back and try again.
+FinSight solves this by implementing an Agentic Workflow using LangGraph, featuring a sophisticated Multi-Document RAG pipeline with verification loops:
+
+1. **Multi-Task Query Planner:** Decomposes complex comparative questions into atomic, targeted retrieval tasks per company, dynamically injecting available database metadata to prevent entity mismatch.
+2. **Hybrid Page-Level Retrieval:** Combines Semantic Vector Search (ChromaDB + SentenceTransformers) with Sparse Keyword Search (BM25) via an Ensemble framework. To prevent splitting financial tables, it employs Page-Level Chunking.
+3. **Fair Reranking & Context Selection:** Executes retrieval independently per company and merges the results fairly (top-k per entity), ensuring no single company monopolizes the LLM context window. 
+4. **Analyst Agent:** Analyzes the retrieved pages, extracts the data, and drafts the response strictly enforcing `[Filename, p. X]` citations.
+5. **Self-Correcting Verification Loop:** An independent Verifier evaluates the Analyst's draft against the raw retrieved context. If evidence is missing or hallucinated, it returns a targeted feedback trace to the Planner, which generates alternative keywords (e.g., searching for "Statements of Income" instead of "Revenue") and triggers a completely new retrieval pass.
 
 ## Architecture
 
 ```mermaid
 flowchart LR
     A[User Question] --> B[Query Planner]
-    B --> C[Retriever]
-    C --> D[Financial Analyst]
+    B -->|Task 1: Alphabet| C[Hybrid Retriever]
+    B -->|Task 2: Microsoft| C
+    C -->|Top 5 Pages Each| D[Financial Analyst]
     D --> E[Evidence Verifier]
     E -->|Supported| F[Final Answer]
-    E -->|Missing Evidence| C
+    E -->|Missing Evidence: Feedback| B
 ```
 
-## Example Workflow
+## Key Features Built
 
-1. **User asks:** "Compare revenue growth and margins for Microsoft."
-2. **Planner:** Generates tasks to retrieve Microsoft's current and previous revenue and operating income.
-3. **Retriever:** Fetches chunks containing the requested metrics.
-4. **Analyst:** Uses the `financial_calculator` tool to correctly calculate the percentage growth and margins, and drafts a response with citations `[10-K, p. 45]`.
-5. **Verifier:** Checks if the metrics cited actually exist in the retrieved chunks.
-6. **Result:** Presented in the UI with an expandable "Agent reasoning flow".
+- **100% Free Tier API Support:** Optimized to run entirely on Groq's Free Tier using Llama 3/GPT open-source models, meticulously managing Tokens-Per-Minute (TPM) limits.
+- **Document Deduplication:** SHA-256 hashing during ingestion to prevent duplicate vector entries.
+- **Strict Metadata Filtering:** Forces exact matches on `company` and `year` to guarantee data integrity across multiple filings.
+- **Diagnostics UI:** Real-time visibility into the agent's "brain", displaying retrieval attempt traces, query methods, candidate counts, and verification status.
 
 ## Screenshots
 
@@ -41,20 +43,19 @@ flowchart LR
 ## Technology Stack
 
 - **Agent Orchestration:** LangGraph, LangChain
-- **LLM:** Google Gemini / OpenAI GPT-4o (configurable)
+- **LLM:** Groq API (`openai/gpt-oss-120b`)
 - **Vector Database:** ChromaDB
-- **Embeddings:** SentenceTransformers (`all-MiniLM-L6-v2`)
+- **Hybrid Search:** `rank_bm25` (Sparse) + Dense Embeddings
+- **Embeddings:** SentenceTransformers (`all-MiniLM-L6-v2`) (Local execution)
 - **PDF Processing:** PyMuPDF
 - **Frontend:** Streamlit
-- **Validation:** Pydantic
-- **Testing:** Pytest
 
 ## Installation
 
 ### Prerequisites
 
 - Python 3.11+
-- API Key for Google Gemini or OpenAI
+- Groq API Key (Free tier)
 
 ### Local Setup
 
@@ -74,7 +75,7 @@ flowchart LR
 3. Setup environment variables:
    ```bash
    cp .env.example .env
-   # Edit .env and add your API keys
+   # Edit .env and add your GROQ_API_KEY
    ```
 
 ### Docker Setup
@@ -91,25 +92,21 @@ docker-compose up --build
    ```
 2. Upload PDF financial reports (e.g., 10-K filings) via the sidebar. Enter the company name and year for proper metadata tagging.
 3. Click "Process Documents".
-4. Ask questions in the chat interface!
+4. Monitor the "Database Stats" panel to ensure documents are cleanly indexed.
+5. Ask questions in the chat interface!
 
-## Example Questions
+## Example Complex Queries
 
-- "Compare revenue growth between Microsoft and Alphabet."
-- "What are the biggest risks management identifies?"
-- "How has operating profitability evolved?"
-- "Compare both companies’ AI strategy."
+- "Compare revenue growth and margins for Microsoft and Alphabet in FY2024 and FY2023."
+- "What are the biggest AI infrastructure risks management identifies in both companies?"
 
 ## Evaluation Methodology
 
-The evaluation module runs a set of predefined questions against the agentic graph and scores the output based on:
-1. **Retrieval Hit Rate:** Did the retriever fetch the right chunks?
-2. **Groundedness / Faithfulness:** What percentage of important claims in the final answer were supported by the context, as judged by the Verifier?
-3. **Answer Completeness:** (Heuristic based on expected facts).
+The evaluation module tests the multi-document loop using `evaluation/test_multi_company.py` to ensure the system correctly isolates and retrieves from separate entities without hallucination.
 
-To run evaluations:
+To run tests:
 ```bash
-python evaluation/evaluate.py
+python evaluation/test_multi_company.py
 ```
 
 ## Evaluation Results
