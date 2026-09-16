@@ -67,11 +67,17 @@ class FinSightRetriever:
         if year:
             filter_dict["year"] = int(year)
             
+        where_clause = None
+        if len(filter_dict) == 1:
+            where_clause = filter_dict
+        elif len(filter_dict) > 1:
+            where_clause = {"$and": [{k: v} for k, v in filter_dict.items()]}
+            
         # Dense Retrieval
         dense_results = self.vectorstore.similarity_search_with_score(
             query, 
             k=top_k, 
-            filter=filter_dict if filter_dict else None
+            filter=where_clause
         )
         # Store as (doc, score)
         

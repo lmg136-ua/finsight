@@ -22,7 +22,13 @@ def retrieve_node(state: GraphState) -> GraphState:
             if task.company: filter_dict["company"] = task.company
             if task.year: filter_dict["year"] = int(task.year)
             
-            docs = retriever.vectorstore.get(where=filter_dict if filter_dict else None, include=["metadatas"])
+            where_clause = None
+            if len(filter_dict) == 1:
+                where_clause = filter_dict
+            elif len(filter_dict) > 1:
+                where_clause = {"$and": [{k: v} for k, v in filter_dict.items()]}
+                
+            docs = retriever.vectorstore.get(where=where_clause, include=["metadatas"])
             matched_files = list(set([m["source_filename"] for m in docs["metadatas"] if m])) if docs and docs.get("metadatas") else []
             
             if not matched_files:
