@@ -11,7 +11,9 @@
 FinSight is a production-grade **Agentic AI Financial Research Assistant** engineered for deep corporate analysis across SEC Form 10-K and 10-Q filings. It solves complex comparative queries with traceable citations, self-correcting verification loops, and automated anti-hallucination guardrails.
 
 <p align="center">
-  <img src="assets/terminal_hero.png" alt="FinSight Institutional Equity Research Desk" width="100%">
+  <a href="assets/terminal_hero.png" target="_blank">
+    <img src="assets/terminal_hero.png" alt="FinSight Institutional Equity Research Desk" width="880" style="max-width: 100%; border-radius: 6px; box-shadow: 0 4px 20px rgba(0,0,0,0.5);">
+  </a>
 </p>
 
 ---
@@ -33,34 +35,26 @@ FinSight addresses these problems with an **institutional-grade multi-agent arch
 ## Enterprise Agentic Architecture
 
 ```mermaid
-flowchart TD
-    User([User Financial Query]) --> Planner[1. Multi-Task Query Planner]
-    
-    subgraph Decomposed Tasks
-        Planner -->|Task A: Alphabet| RetA[Hybrid Retrieval PASS 1]
-        Planner -->|Task B: Microsoft| RetB[Hybrid Retrieval PASS 2]
-    end
+flowchart LR
+    classDef main fill:#1e293b,stroke:#3b82f6,stroke-width:2px,color:#f8fafc;
+    classDef tool fill:#0f172a,stroke:#10b981,stroke-width:1.5px,color:#34d399;
+    classDef guard fill:#0f172a,stroke:#f59e0b,stroke-width:1.5px,color:#fbbf24;
 
-    subgraph Hybrid RAG Engine
-        RetA --> SearchA[Dense Vector + BM25 Sparse Search]
-        RetB --> SearchB[Dense Vector + BM25 Sparse Search]
-        SearchA --> FairRerank[Fair Multi-Entity Reranker]
-        SearchB --> FairRerank
-    end
+    Query([User Financial Query]) --> Planner[1. Query Planner]
+    Planner -->|Sub-Tasks| HybridRAG[2. Hybrid RAG & Fair Reranker]
+    HybridRAG -->|Balanced Context| Analyst[3. ReAct Financial Analyst]
+    
+    Analyst <--> Tools[(Deterministic Math Tools)]
+    
+    Analyst -->|Draft Memo| Verifier[4. Factual Verifier Guardrail]
+    
+    Verifier -->|Audit Verified| FinalMemo([Final Research Briefing])
+    Verifier -.->|Evidence Gap Feedback| Planner
+    Verifier -.->|Audit Critique| Analyst
 
-    FairRerank -->|Top Pages Balanced| Analyst[2. Financial Analyst ReAct Agent]
-    
-    subgraph Deterministic Math Engine
-        Analyst <--> Tools[Financial Calculator Tools: YoY, Margin, Ratio, CAGR]
-    end
-
-    Analyst -->|Draft Answer with Citations| Verifier[3. Evidence Verifier Guardrail]
-    
-    Verifier -->|Factual Audit: All Claims Supported| Finalizer[4. Finalized Research Memo]
-    Verifier -->|Missing Evidence: Targeted Feedback| Planner
-    Verifier -->|Unsupported Claim: Feedback| Analyst
-    
-    Finalizer --> Output([Streamlit Terminal & Plotly Charts])
+    class Planner,HybridRAG,Analyst main;
+    class Tools tool;
+    class Verifier guard;
 ```
 
 ### Core Architecture Components
@@ -172,7 +166,9 @@ Access the application at `http://localhost:8501`.
 > *Key Differentiator: Automatically decomposes queries into separate company tasks, isolates notes on Segment Reporting, and enforces fair context budgets to prevent single-firm context monopolization.*
 
 <p align="center">
-  <img src="assets/terminal_charts.png" alt="Comparative Visuals - Chart.js Financial Statements" width="100%">
+  <a href="assets/terminal_charts.png" target="_blank">
+    <img src="assets/terminal_charts.png" alt="Comparative Visuals - Chart.js Financial Statements" width="880" style="max-width: 100%; border-radius: 6px; box-shadow: 0 4px 20px rgba(0,0,0,0.5);">
+  </a>
 </p>
 
 ### 3. Factual Attribution & Regulatory Audit Trail
@@ -182,7 +178,9 @@ Access the application at `http://localhost:8501`.
 > - `[VERIFIED]` **Operating Leverage:** Margins verified deterministically with zero LLM rounding error.
 
 <p align="center">
-  <img src="assets/terminal_audit.png" alt="Anti-Hallucination Audit Log & Deterministic Tool Calls" width="100%">
+  <a href="assets/terminal_audit.png" target="_blank">
+    <img src="assets/terminal_audit.png" alt="Anti-Hallucination Audit Log & Deterministic Tool Calls" width="880" style="max-width: 100%; border-radius: 6px; box-shadow: 0 4px 20px rgba(0,0,0,0.5);">
+  </a>
 </p>
 
 ---
