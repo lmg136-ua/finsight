@@ -10,6 +10,10 @@
 
 FinSight is a production-grade **Agentic AI Financial Research Assistant** engineered for deep corporate analysis across SEC Form 10-K and 10-Q filings. It solves complex comparative queries with traceable citations, self-correcting verification loops, and automated anti-hallucination guardrails.
 
+<p align="center">
+  <img src="assets/terminal_hero.png" alt="FinSight Institutional Equity Research Desk" width="100%">
+</p>
+
 ---
 
 ## Executive Summary & Problem Statement
@@ -162,16 +166,24 @@ Access the application at `http://localhost:8501`.
 > ```
 > *Key Differentiator: Unlike standard RAG that hallucinates arithmetic, margins and YoY rates are computed deterministically via Python tool calls (`margin_tool`, `percentage_change_tool`).*
 
-### 2. Multi-Entity Fair Context Allocation
+### 2. Multi-Entity Fair Context Allocation & Visual Analytics
 > **Inquiry:** *"Compare Google Cloud segment profitability against Microsoft Cloud performance in fiscal year 2024."*
 > 
 > *Key Differentiator: Automatically decomposes queries into separate company tasks, isolates notes on Segment Reporting, and enforces fair context budgets to prevent single-firm context monopolization.*
+
+<p align="center">
+  <img src="assets/terminal_charts.png" alt="Comparative Visuals - Chart.js Financial Statements" width="100%">
+</p>
 
 ### 3. Factual Attribution & Regulatory Audit Trail
 > Every claim in the synthesized report undergoes automated audit evaluation:
 > - `[VERIFIED]` **Alphabet FY24 Revenue:** $350,018M extracted directly from Consolidated Statements of Income (p. 34).
 > - `[VERIFIED]` **Microsoft FY24 Revenue:** $245,122M extracted from Statement of Income (p. 68).
 > - `[VERIFIED]` **Operating Leverage:** Margins verified deterministically with zero LLM rounding error.
+
+<p align="center">
+  <img src="assets/terminal_audit.png" alt="Anti-Hallucination Audit Log & Deterministic Tool Calls" width="100%">
+</p>
 
 ---
 
