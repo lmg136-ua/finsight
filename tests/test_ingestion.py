@@ -2,8 +2,9 @@ import pytest
 from unittest.mock import patch, MagicMock
 from app.retrieval.ingestion import process_document
 
+@patch('app.retrieval.ingestion.get_file_hash', return_value="fake_hash_123456")
 @patch('app.retrieval.ingestion.fitz.open')
-def test_process_document(mock_fitz_open):
+def test_process_document(mock_fitz_open, mock_get_file_hash):
     # Mocking a PDF document with one page
     mock_doc = MagicMock()
     mock_page = MagicMock()
@@ -17,4 +18,5 @@ def test_process_document(mock_fitz_open):
     assert len(docs) > 0
     assert docs[0].metadata["company"] == "Microsoft"
     assert docs[0].metadata["year"] == 2023
+    assert docs[0].metadata["file_hash"] == "fake_hash_123456"
     assert "test financial report" in docs[0].page_content

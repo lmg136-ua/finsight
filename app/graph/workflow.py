@@ -1,5 +1,6 @@
+from typing import List, Dict, Any, Optional
 from langgraph.graph import StateGraph, START, END
-from app.models.schemas import GraphState
+from app.models.schemas import GraphState, RetrievedChunk
 from app.agents.planner import plan_query
 from app.agents.analyst import analyze_and_draft
 from app.agents.verifier import verify_claims
@@ -9,8 +10,8 @@ def retrieve_node(state: GraphState) -> GraphState:
     plan = state.get("plan")
     question = state["question"]
     
-    all_chunks = []
-    traces = state.get("retrieval_traces", [])
+    all_chunks: List[RetrievedChunk] = []
+    traces = list(state.get("retrieval_traces") or [])
     attempt = state.get("iteration_count", 0) + 1
     
     if plan and plan.tasks:
@@ -19,8 +20,10 @@ def retrieve_node(state: GraphState) -> GraphState:
             
             # Check if document exists before retrieval
             filter_dict = {}
-            if task.company: filter_dict["company"] = task.company
-            if task.year: filter_dict["year"] = int(task.year)
+            if task.company: 
+                filter_dict["company"] = task.company
+            if task.year: 
+                filter_dict["year"] = int(task.year)
             
             where_clause = None
             if len(filter_dict) == 1:
@@ -43,8 +46,8 @@ def retrieve_node(state: GraphState) -> GraphState:
                 })
                 continue
                 
-            # Retrieve top 5 per company
-            chunks = retriever.search(query, company=task.company, year=task.year, top_k=5)
+            # Retrieve top 3 per entity
+            chunks = retriever.search(query, company=task.company, year=task.year, top_k=3)
             all_chunks.extend(chunks)
             
             traces.append({
@@ -57,29 +60,46 @@ def retrieve_node(state: GraphState) -> GraphState:
                 "matched_files": matched_files
             })
     else:
-        fallback_chunks = retriever.search(question, top_k=5)
+        fallback_chunks = retriever.search(question, top_k=3)
         all_chunks.extend(fallback_chunks)
         
-    # Deduplicate chunks based on text
+    # Fair context selection across entities (prevent one company from dominating context)
     seen = set()
-    unique_chunks = []
+    chunks_by_company: Dict[str, List[RetrievedChunk]] = {}
     for chunk in all_chunks:
+        comp = chunk.metadata.company or "General"
+        if comp not in chunks_by_company:
+            chunks_by_company[comp] = []
         if chunk.text not in seen:
             seen.add(chunk.text)
-            unique_chunks.append(chunk)
+            chunks_by_company[comp].append(chunk)
             
-    # Keep up to 8 unique pages (approx 4000 tokens) to stay well under the 8000 TPM limit
-    return {"retrieved_chunks": unique_chunks[:8], "retrieval_traces": traces}
+    num_companies = len(chunks_by_company)
+    max_per_comp = max(1, 4 // max(1, num_companies))
+    
+    fair_chunks: List[RetrievedChunk] = []
+    for comp, comp_chunks in chunks_by_company.items():
+        fair_chunks.extend(comp_chunks[:max_per_comp])
+        
+    # Fill remaining capacity up to 4 pages (approx 2,000 tokens for strict TPM safety)
+    if len(fair_chunks) < 4:
+        for comp, comp_chunks in chunks_by_company.items():
+            for c in comp_chunks[max_per_comp:]:
+                if len(fair_chunks) >= 4:
+                    break
+                fair_chunks.append(c)
+                
+    return {"retrieved_chunks": fair_chunks, "retrieval_traces": traces}
 
 def finalize_answer(state: GraphState) -> GraphState:
-    # Accept the draft as the final answer
-    return {"final_answer": state["draft_answer"]}
+    # Accept the verified/draft answer as the final response
+    return {"final_answer": state.get("draft_answer", "No answer generated.")}
 
-def should_loop(state: GraphState):
-    ver_res = state["verification_result"]
+def should_loop(state: GraphState) -> str:
+    ver_res = state.get("verification_result")
     iteration = state.get("iteration_count", 0)
     
-    if ver_res.all_supported or iteration >= 2:
+    if not ver_res or ver_res.all_supported or iteration >= 2:
         return "finalize"
     
     # If evidence is missing, replan and retrieve again
@@ -121,4 +141,20 @@ def build_graph():
     
     return workflow.compile()
 
-app_graph = build_graph()
+# Lazy compiled graph singleton
+_app_graph = None
+
+def get_app_graph():
+    global _app_graph
+    if _app_graph is None:
+        _app_graph = build_graph()
+    return _app_graph
+
+class _LazyGraphProxy:
+    """Proxy object that delegates all calls to get_app_graph()."""
+    def __getattr__(self, name):
+        return getattr(get_app_graph(), name)
+    def invoke(self, *args, **kwargs):
+        return get_app_graph().invoke(*args, **kwargs)
+
+app_graph = _LazyGraphProxy()

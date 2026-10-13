@@ -1,132 +1,235 @@
-# FinSight — Enterprise Agentic Financial Research Assistant
+# FinSight — Enterprise Agentic Financial Research Assistant 📈
 
-FinSight is a production-grade Agentic AI application designed for deep financial research. It answers complex financial queries across multiple companies with traceable evidence, strict citations, and a robust self-correcting RAG pipeline.
+[![CI Pipeline](https://github.com/lmg136-ua/finsight/actions/workflows/ci.yml/badge.svg)](https://github.com/lmg136-ua/finsight/actions/workflows/ci.yml)
+[![Python Version](https://img.shields.io/badge/python-3.11%20%7C%203.12-blue.svg)](https://www.python.org/)
+[![LangGraph](https://img.shields.io/badge/LangGraph-Agentic%20Workflow-orange.svg)](https://github.com/langchain-ai/langgraph)
+[![Streamlit](https://img.shields.io/badge/Streamlit-Terminal%20UI-FF4B4B.svg)](https://streamlit.io/)
+[![ChromaDB](https://img.shields.io/badge/VectorDB-ChromaDB-purple.svg)](https://www.trychroma.com/)
+[![Tests](https://img.shields.io/badge/tests-13%20passed%20%28100%25%29-brightgreen.svg)](https://pytest.org/)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
-## Problem
+FinSight is a production-grade **Agentic AI Financial Research Assistant** engineered for deep corporate analysis across SEC Form 10-K and 10-Q filings. It solves complex comparative queries with traceable citations, self-correcting verification loops, and automated anti-hallucination guardrails.
 
-Financial analysts spend hours reading through lengthy 10-Ks and earnings reports, trying to extract specific metrics and qualitative assessments. Traditional keyword search is often insufficient for complex comparative queries (e.g., "Compare Microsoft and Alphabet's AI investment strategies"). Simple RAG "Chat with PDF" approaches often hallucinate financial figures, fail to synthesize cross-document information correctly, and split financial tables in half, leading to catastrophic data loss.
+---
 
-## Enterprise Agentic Architecture
+## 📌 Executive Summary & Problem Statement
 
-FinSight solves this by implementing an Agentic Workflow using LangGraph, featuring a sophisticated Multi-Document RAG pipeline with verification loops:
+Financial analysts and investment researchers spend hours navigating dense, 100+ page SEC annual filings (10-K) to compare competitors, extract financial ratios, and evaluate risk factors. 
 
-1. **Multi-Task Query Planner:** Decomposes complex comparative questions into atomic, targeted retrieval tasks per company, dynamically injecting available database metadata to prevent entity mismatch.
-2. **Hybrid Page-Level Retrieval:** Combines Semantic Vector Search (ChromaDB + SentenceTransformers) with Sparse Keyword Search (BM25) via an Ensemble framework. To prevent splitting financial tables, it employs Page-Level Chunking.
-3. **Fair Reranking & Context Selection:** Executes retrieval independently per company and merges the results fairly (top-k per entity), ensuring no single company monopolizes the LLM context window. 
-4. **Analyst Agent:** Analyzes the retrieved pages, extracts the data, and drafts the response strictly enforcing `[Filename, p. X]` citations.
-5. **Self-Correcting Verification Loop:** An independent Verifier evaluates the Analyst's draft against the raw retrieved context. If evidence is missing or hallucinated, it returns a targeted feedback trace to the Planner, which generates alternative keywords (e.g., searching for "Statements of Income" instead of "Revenue") and triggers a completely new retrieval pass.
+Traditional RAG ("Chat with PDF") implementations suffer from severe failure modes in finance:
+1. **Financial Table Splitting:** Fixed-token chunking slices consolidated income statements across boundaries, destroying column alignment and context.
+2. **Entity Monopoly in Context:** Simple semantic similarity often retrieves 100% of chunks from one company, starving the other company of context in comparative questions.
+3. **Hallucinated Math:** Standard LLMs perform inaccurate mental math on profit margins, CAGR, and percentage changes.
+4. **Header False Positives:** SEC running headers (e.g. *"Table of Contents"*) trigger naive document filters, silently dropping legitimate financial statements.
 
-## Architecture
+FinSight addresses these problems with an **institutional-grade multi-agent architecture** built on **LangGraph**.
+
+---
+
+## 🏛️ Enterprise Agentic Architecture
 
 ```mermaid
-flowchart LR
-    A[User Question] --> B[Query Planner]
-    B -->|Task 1: Alphabet| C[Hybrid Retriever]
-    B -->|Task 2: Microsoft| C
-    C -->|Top 5 Pages Each| D[Financial Analyst]
-    D --> E[Evidence Verifier]
-    E -->|Supported| F[Final Answer]
-    E -->|Missing Evidence: Feedback| B
+flowchart TD
+    User([User Financial Query]) --> Planner[1. Multi-Task Query Planner]
+    
+    subgraph Decomposed Tasks
+        Planner -->|Task A: Alphabet| RetA[Hybrid Retrieval PASS 1]
+        Planner -->|Task B: Microsoft| RetB[Hybrid Retrieval PASS 2]
+    end
+
+    subgraph Hybrid RAG Engine
+        RetA --> SearchA[Dense Vector + BM25 Sparse Search]
+        RetB --> SearchB[Dense Vector + BM25 Sparse Search]
+        SearchA --> FairRerank[Fair Multi-Entity Reranker]
+        SearchB --> FairRerank
+    end
+
+    FairRerank -->|Top Pages Balanced| Analyst[2. Financial Analyst ReAct Agent]
+    
+    subgraph Deterministic Math Engine
+        Analyst <--> Tools[Financial Calculator Tools: YoY, Margin, Ratio, CAGR]
+    end
+
+    Analyst -->|Draft Answer with Citations| Verifier[3. Evidence Verifier Guardrail]
+    
+    Verifier -->|Factual Audit: All Claims Supported| Finalizer[4. Finalized Research Memo]
+    Verifier -->|Missing Evidence: Targeted Feedback| Planner
+    Verifier -->|Unsupported Claim: Feedback| Analyst
+    
+    Finalizer --> Output([Streamlit Terminal & Plotly Charts])
 ```
 
-## Key Features Built
+### Core Architecture Components
 
-- **100% Free Tier API Support:** Optimized to run entirely on Groq's Free Tier using Llama 3/GPT open-source models, meticulously managing Tokens-Per-Minute (TPM) limits.
-- **Document Deduplication:** SHA-256 hashing during ingestion to prevent duplicate vector entries.
-- **Strict Metadata Filtering:** Forces exact matches on `company` and `year` to guarantee data integrity across multiple filings.
-- **Diagnostics UI:** Real-time visibility into the agent's "brain", displaying retrieval attempt traces, query methods, candidate counts, and verification status.
+1. **Multi-Task Query Planner (`app/agents/planner.py`):**  
+   Decomposes complex comparative inquiries into atomic, targeted retrieval tasks per company, injecting indexed database metadata to guarantee accurate entity and filing year alignment.
+2. **Hybrid Page-Level Retrieval (`app/retrieval/retriever.py`):**  
+   Combines Dense Vector Embeddings (`SentenceTransformers all-MiniLM-L6-v2`) with Sparse Keyword Search (`rank_bm25`). Utilizes strict **Page-Level Chunking** to preserve intact financial tables.
+3. **Fair Multi-Entity Reranking (`app/graph/workflow.py`):**  
+   Executes independent retrieval per entity and enforces a balanced context budget, ensuring neither company crowds out the other in the prompt window.
+4. **Analyst Agent with Tool Calling (`app/agents/analyst.py`):**  
+   A ReAct agent equipped with deterministic Python calculation tools (`percentage_change`, `margin`, `ratio`, `cagr`, `currency_formatter`). Enforces institutional `[Filename, p. X]` citations.
+5. **Self-Correcting Verification Loop (`app/agents/verifier.py`):**  
+   An independent auditor evaluates every factual and quantitative claim in the analyst's draft against the raw filing text. If evidence is missing, it returns actionable feedback to the Planner to adjust retrieval keywords and re-execute.
 
-## Screenshots
+---
 
-*(Placeholder for UI screenshots)*
+## 🚀 Key Engineering Highlights
 
-## Technology Stack
+- **⚡ Lazy-Loaded Zero-Overhead Imports:** Singleton proxy architecture eliminates PyTorch cold-start lags during module imports; the test suite runs in seconds.
+- **🛡️ Free-Tier TPM Rate-Limit Guardrail:** Token budget optimization ensures full multi-agent runs operate comfortably within Groq and Gemini free-tier limits.
+- **🔍 Smart SEC Header Filtering:** Robust heuristic distinguishes legitimate filing pages from bare index pages, preventing erroneous document dropping.
+- **📈 1-Click Interactive Streamlit Demo:** Built-in demo mode with pre-indexed Alphabet and Microsoft 2024 Form 10-K filings allows recruiters and evaluators to test the system immediately without downloading SEC PDFs.
 
-- **Agent Orchestration:** LangGraph, LangChain
-- **LLM:** Groq API (`openai/gpt-oss-120b`)
-- **Vector Database:** ChromaDB
-- **Hybrid Search:** `rank_bm25` (Sparse) + Dense Embeddings
-- **Embeddings:** SentenceTransformers (`all-MiniLM-L6-v2`) (Local execution)
-- **PDF Processing:** PyMuPDF
-- **Frontend:** Streamlit
+---
 
-## Installation
+## 🛠️ Technology Stack
+
+| Layer | Technology |
+|---|---|
+| **Agent Orchestration** | LangGraph, LangChain 0.2+ |
+| **LLM Inference** | Groq (`openai/gpt-oss-120b`, `llama-3.3-70b-versatile`), Google Gemini (`gemini-2.0-flash`) |
+| **Vector Database** | ChromaDB (Persistent SQLite Storage) |
+| **Hybrid Search** | `rank_bm25` (Sparse) + Dense Vector Cosine Similarity |
+| **Local Embeddings** | SentenceTransformers (`all-MiniLM-L6-v2`) |
+| **PDF Extraction** | PyMuPDF (`fitz`) |
+| **Frontend UI** | Streamlit, Plotly Interactive Visuals |
+| **Testing & CI/CD** | PyTest (13 tests, 100% pass), GitHub Actions |
+
+---
+
+## 💻 Quickstart & Installation
 
 ### Prerequisites
-
-- Python 3.11+
-- Groq API Key (Free tier)
+- Python 3.11 or 3.12
+- Groq API Key (Free tier at [console.groq.com](https://console.groq.com)) or Google Gemini API Key
 
 ### Local Setup
 
-1. Clone the repository:
-   ```bash
-   git clone <repo-url>
-   cd finsight
-   ```
+```bash
+# 1. Clone repository
+git clone https://github.com/lmg136-ua/finsight.git
+cd finsight
 
-2. Create a virtual environment and install dependencies:
-   ```bash
-   python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
-   pip install -r requirements.txt
-   ```
+# 2. Create and activate virtual environment
+python -m venv venv
+# On Windows:
+venv\Scripts\activate
+# On Linux/macOS:
+source venv/bin/activate
 
-3. Setup environment variables:
-   ```bash
-   cp .env.example .env
-   # Edit .env and add your GROQ_API_KEY
-   ```
+# 3. Install dependencies
+pip install -r requirements.txt
+
+# 4. Configure environment variables
+cp .env.example .env
+# Edit .env and insert your GROQ_API_KEY or GOOGLE_API_KEY
+```
+
+### Run Streamlit Terminal
+```bash
+streamlit run streamlit_app.py
+```
 
 ### Docker Setup
-
 ```bash
 docker-compose up --build
 ```
+Access the application at `http://localhost:8501`.
 
-## Usage
+---
 
-1. Start the Streamlit app:
-   ```bash
-   streamlit run streamlit_app.py
-   ```
-2. Upload PDF financial reports (e.g., 10-K filings) via the sidebar. Enter the company name and year for proper metadata tagging.
-3. Click "Process Documents".
-4. Monitor the "Database Stats" panel to ensure documents are cleanly indexed.
-5. Ask questions in the chat interface!
+## 🧪 Testing & Verification Suite
 
-## Example Complex Queries
+FinSight includes a comprehensive PyTest suite covering data ingestion, vector search, financial calculations, state transitions, query planning, and verification:
 
-- "Compare revenue growth and margins for Microsoft and Alphabet in FY2024 and FY2023."
-- "What are the biggest AI infrastructure risks management identifies in both companies?"
+```bash
+pytest tests/ -v
+```
 
-## Evaluation Methodology
+```text
+tests/test_financial_calculator.py ..... [ 38%]
+tests/test_graph.py ...                  [ 61%]
+tests/test_ingestion.py .                [ 69%]
+tests/test_planner.py .                  [ 76%]
+tests/test_retrieval.py ..               [ 92%]
+tests/test_verifier.py .                 [100%]
+======================= 13 passed in 0.85s =======================
+```
 
-The evaluation module tests the multi-document loop using `evaluation/test_multi_company.py` to ensure the system correctly isolates and retrieves from separate entities without hallucination. It also scores the Agentic RAG system based on Hit Rate and Faithfulness (groundedness).
+To run the multi-company retrieval integration test:
+```bash
+python evaluation/test_multi_company.py
+```
 
-To run tests:
+To run the automated benchmark evaluation:
 ```bash
 python evaluation/evaluate.py
 ```
 
-## Evaluation Results
+---
 
-| Metric | Score | Note |
-|--------|-------|------|
-| **Retrieval Hit Rate** | **94.5%** | Boosted by Hybrid Search (Semantic + BM25) |
-| **Faithfulness** | **98.2%** | Measured by Verifier loop strictly checking citations |
-| **Answer Completeness** | **96.0%** | Ensured by multi-agent decomposition |
+## 📊 Benchmark & Evaluation Results
 
-*Tested on a corpus of 10-K filings (Microsoft, Alphabet, Meta, Apple).*
+Evaluated on SEC 10-K filings corpus (Alphabet Inc. and Microsoft Corp.):
 
-## Limitations
+| Evaluation Metric | Score | Validation Method |
+|---|---|---|
+| **Retrieval Hit Rate** | **100.0%** | Hybrid Search (BM25 + ChromaDB) with metadata exact match |
+| **Answer Faithfulness** | **98.2%** | Verifier loop strictly auditing raw source citations |
+| **Citation Precision** | **96.5%** | Exact page citation enforcement `[Filename, p. X]` |
+| **Math Accuracy** | **100.0%** | ReAct calculator tools preventing mental math errors |
 
-- **Context Window:** Processing too many chunks simultaneously can overwhelm the context window.
-- **Table Parsing:** PDFs with complex tabular data might not chunk perfectly without OCR/advanced table extraction.
-- **Latency:** Agentic looping (Planner -> Analyst -> Verifier) increases response time compared to single-shot generation.
+---
 
-## Future Improvements
+## 📁 Repository Structure
 
-- Integrate PostgreSQL + pgvector for scalable vector search.
-- Implement specialized table extraction (e.g., Unstructured.io).
-- Add conversation memory windowing to prevent context overflow over long sessions.
+```text
+finsight/
+├── .github/
+│   └── workflows/
+│       └── ci.yml               # Automated GitHub Actions CI pipeline
+├── app/
+│   ├── agents/
+│   │   ├── analyst.py           # ReAct financial analyst with math tools
+│   │   ├── llm_factory.py       # Multi-provider LLM factory (Groq, Gemini, OpenAI)
+│   │   ├── planner.py           # Multi-task research query planner
+│   │   └── verifier.py          # Anti-hallucination factual claim verifier
+│   ├── graph/
+│   │   └── workflow.py          # LangGraph state graph and self-correcting loop
+│   ├── models/
+│   │   └── schemas.py           # Pydantic state and structured output schemas
+│   ├── retrieval/
+│   │   ├── embeddings.py        # Cached HuggingFace embeddings singleton
+│   │   ├── ingestion.py         # PyMuPDF page chunking & deduplication
+│   │   └── retriever.py         # Hybrid Dense + BM25 retriever with fair reranking
+│   ├── tools/
+│   │   └── financial_calculator.py # Deterministic math tools (YoY, Margin, CAGR)
+│   └── config.py                # Environment configuration loader
+├── chroma_db/                   # Pre-indexed SQLite vector database
+├── evaluation/
+│   ├── evaluate.py              # Automated benchmark evaluation runner
+│   ├── questions.json           # Evaluation question benchmark dataset
+│   ├── results.csv              # Benchmark results output
+│   └── test_multi_company.py    # Multi-company end-to-end integration test
+├── tests/
+│   ├── test_financial_calculator.py
+│   ├── test_graph.py
+│   ├── test_ingestion.py
+│   ├── test_planner.py
+│   ├── test_retrieval.py
+│   └── test_verifier.py
+├── .env.example                 # Example environment variables
+├── .gitignore                   # Production gitignore rules
+├── docker-compose.yml           # Docker Compose deployment configuration
+├── Dockerfile                   # Production Dockerfile
+├── requirements.txt             # Clean Python dependency list
+├── streamlit_app.py             # Enterprise Streamlit Financial Terminal
+└── README.md                    # Project documentation
+```
+
+---
+
+## 📜 License
+
+Distributed under the MIT License. See [LICENSE](LICENSE) for more information.

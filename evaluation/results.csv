@@ -1,4 +1,4 @@
 question,hit_rate,faithfulness,answer_length,iterations
-What is the primary business model of Microsoft?,0,0,0,0
-What are the biggest risks management identifies for Alphabet?,0,0,0,0
-Compare the operating profitability of Microsoft and Alphabet.,0,0,0,0
+What is the primary business model of Microsoft?,1,1.0,769,2
+What are the biggest risks management identifies for Alphabet?,0,0.0,67,2
+Compare the operating profitability of Microsoft and Alphabet.,1,1.0,974,2

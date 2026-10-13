@@ -1,11 +1,14 @@
 import sys
 import os
 
+# Ensure UTF-8 output encoding on Windows consoles
+if hasattr(sys.stdout, 'reconfigure'):
+    sys.stdout.reconfigure(encoding='utf-8')
+
 # Add parent dir to path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app.graph.workflow import app_graph
-from app.retrieval.retriever import FinSightRetriever
 
 def test_multi_company():
     print("Running Multi-Company Table Retrieval Test...")

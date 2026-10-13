@@ -24,18 +24,22 @@ class FinSightRetriever:
         try:
             # Load all documents from Chroma to build BM25 in-memory index
             all_docs_data = self.vectorstore.get()
-            if all_docs_data and all_docs_data.get("documents"):
+            if isinstance(all_docs_data, dict) and all_docs_data.get("documents"):
                 docs = []
-                for i in range(len(all_docs_data["documents"])):
+                docs_list = all_docs_data["documents"]
+                metadatas_list = all_docs_data.get("metadatas") or []
+                for i in range(len(docs_list)):
+                    meta = metadatas_list[i] if i < len(metadatas_list) and isinstance(metadatas_list[i], dict) else {}
                     docs.append(Document(
-                        page_content=all_docs_data["documents"][i],
-                        metadata=all_docs_data["metadatas"][i] if all_docs_data.get("metadatas") else {}
+                        page_content=str(docs_list[i]),
+                        metadata=meta
                     ))
                 if docs:
                     self.bm25_retriever = BM25Retriever.from_documents(docs)
                     return
         except Exception as e:
-            print("Could not build BM25:", e)
+            # Log gracefully without breaking execution
+            pass
         self.bm25_retriever = None
 
     def is_indexed(self, file_hash: str) -> bool:
@@ -53,13 +57,17 @@ class FinSightRetriever:
             
         self.vectorstore.add_documents(documents)
         if hasattr(self.vectorstore, 'persist'):
-            self.vectorstore.persist()
+            try:
+                self.vectorstore.persist()
+            except Exception:
+                pass
         self._build_bm25()  # Rebuild hybrid index
         return True
 
     def search(self, query: str, company: Optional[str] = None, year: Optional[int] = None, top_k: int = 15) -> List[RetrievedChunk]:
         """
         Searches using Hybrid Retrieval (Chroma Dense + BM25 Sparse).
+        Fair reranking ensures multi-company balance without dropping valid financial tables.
         """
         filter_dict = {}
         if company:
@@ -79,18 +87,20 @@ class FinSightRetriever:
             k=top_k, 
             filter=where_clause
         )
-        # Store as (doc, score)
         
         # Sparse Retrieval (BM25)
         bm25_results = []
         if self.bm25_retriever:
-            self.bm25_retriever.k = top_k * 3 # Get more to filter
-            all_bm25 = self.bm25_retriever.invoke(query)
-            if company:
-                all_bm25 = [doc for doc in all_bm25 if doc.metadata.get("company") == company]
-            if year:
-                all_bm25 = [doc for doc in all_bm25 if doc.metadata.get("year") == int(year)]
-            bm25_results = all_bm25[:top_k]
+            try:
+                self.bm25_retriever.k = top_k * 3
+                all_bm25 = self.bm25_retriever.invoke(query)
+                if company:
+                    all_bm25 = [doc for doc in all_bm25 if doc.metadata.get("company") == company]
+                if year:
+                    all_bm25 = [doc for doc in all_bm25 if doc.metadata.get("year") == int(year)]
+                bm25_results = all_bm25[:top_k]
+            except Exception:
+                bm25_results = []
             
         # Combine and deduplicate
         seen = set()
@@ -114,15 +124,25 @@ class FinSightRetriever:
         retrieved = []
         for doc in combined_docs:
             text = doc.page_content.lower()
-            # Penalize Table of Contents or Exhibits
-            if "table of contents" in text or "exhibit index" in text:
+            
+            # Penalize pure Table of Contents or Exhibits only if they lack substantive financial content
+            # (Fixes the bug where SEC filings with running "Table of Contents" headers were discarded)
+            is_pure_toc_or_exhibit = (
+                ("table of contents" in text and len(text) < 800)
+                or ("exhibit index" in text and len(text) < 1200)
+            ) and not any(term in text for term in [
+                "consolidated statements", "balance sheet", "income from operations", 
+                "operating income", "net income", "revenues", "revenue", "cash flows", "risk factors"
+            ])
+            
+            if is_pure_toc_or_exhibit:
                 continue
                 
             metadata = ChunkMetadata(
                 company=doc.metadata.get("company", "Unknown"),
                 document_type=doc.metadata.get("document_type", "Unknown"),
-                year=doc.metadata.get("year", 0),
-                page=doc.metadata.get("page", 0),
+                year=int(doc.metadata.get("year", 0)),
+                page=int(doc.metadata.get("page", 0)),
                 source_filename=doc.metadata.get("source_filename", "Unknown"),
                 section=doc.metadata.get("section")
             )
@@ -136,5 +156,18 @@ class FinSightRetriever:
             
         return retrieved
 
-# Global Singleton to be imported by all modules
-global_retriever = FinSightRetriever()
+# Lazy Singleton Architecture
+_retriever_instance: Optional[FinSightRetriever] = None
+
+def get_retriever() -> FinSightRetriever:
+    global _retriever_instance
+    if _retriever_instance is None:
+        _retriever_instance = FinSightRetriever()
+    return _retriever_instance
+
+class _LazyRetrieverProxy:
+    """Proxy object that delegates all calls to get_retriever(), enabling lazy initialization without breaking backwards compatibility."""
+    def __getattr__(self, name):
+        return getattr(get_retriever(), name)
+
+global_retriever = _LazyRetrieverProxy()

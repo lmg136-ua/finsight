@@ -10,8 +10,18 @@
         "expected_facts": ["Competition in AI", "Regulatory scrutiny", "Ad revenue reliance"]
     },
     {
-        "question": "Compare the operating profitability of Microsoft and Alphabet.",
+        "question": "Compare the operating profitability and income of Microsoft and Alphabet.",
         "expected_company": "Microsoft, Alphabet",
-        "expected_facts": ["Microsoft margin", "Alphabet margin", "Comparison of the two"]
+        "expected_facts": ["Operating income", "Margins", "Comparison table"]
+    },
+    {
+        "question": "What was Alphabet's total revenue for fiscal year 2024?",
+        "expected_company": "Alphabet",
+        "expected_facts": ["$350,018 million", "2024 Form 10-K"]
+    },
+    {
+        "question": "What are the primary cloud infrastructure drivers described by Microsoft?",
+        "expected_company": "Microsoft",
+        "expected_facts": ["Azure", "Intelligent Cloud", "Enterprise AI"]
     }
 ]
