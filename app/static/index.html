@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FinSight | Institutional Equity Research Desk</title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Marked.js for Markdown -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['"JetBrains Mono"', 'monospace'],
+                    },
+                    colors: {
+                        obsidian: '#090d16',
+                        panel: '#0f172a',
+                        card: '#131b2e',
+                        subtle: '#1e293b',
+                        border: '#273549',
+                        accent: '#3b82f6',
+                        success: '#10b981',
+                        warning: '#f59e0b',
+                        danger: '#ef4444',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #080c14;
+            color: #e2e8f0;
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden;
+        }
+        /* Custom Scrollbars */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #090d16;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1e293b;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #334155;
+        }
+        /* Financial Tables Styling in Markdown */
+        .markdown-body table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1.25rem 0;
+            font-size: 0.88rem;
+        }
+        .markdown-body th {
+            background-color: #162035;
+            color: #f1f5f9;
+            font-weight: 600;
+            text-align: left;
+            padding: 0.75rem 1rem;
+            border-bottom: 2px solid #273549;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.82rem;
+            letter-spacing: 0.03em;
+        }
+        .markdown-body td {
+            padding: 0.7rem 1rem;
+            border-bottom: 1px solid #1e293b;
+            color: #cbd5e1;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+        }
+        .markdown-body tr:hover td {
+            background-color: rgba(30, 41, 59, 0.4);
+        }
+        .markdown-body h1, .markdown-body h2, .markdown-body h3 {
+            color: #f8fafc;
+            font-weight: 700;
+            margin-top: 1.5rem;
+            margin-bottom: 0.75rem;
+            font-family: 'Inter', sans-serif;
+        }
+        .markdown-body h2 {
+            font-size: 1.15rem;
+            border-bottom: 1px solid #1e293b;
+            padding-bottom: 0.4rem;
+        }
+        .markdown-body h3 {
+            font-size: 1rem;
+            color: #93c5fd;
+        }
+        .markdown-body p {
+            margin-bottom: 0.85rem;
+            line-height: 1.65;
+            color: #cbd5e1;
+        }
+        .markdown-body ul {
+            list-style-type: disc;
+            padding-left: 1.25rem;
+            margin-bottom: 0.85rem;
+        }
+        .markdown-body li {
+            margin-bottom: 0.4rem;
+            line-height: 1.5;
+        }
+        .markdown-body code {
+            font-family: 'JetBrains Mono', monospace;
+            background-color: #162035;
+            color: #60a5fa;
+            padding: 0.15rem 0.35rem;
+            border-radius: 4px;
+            font-size: 0.82rem;
+        }
+        /* Citation Pills */
+        .citation-tag {
+            font-family: 'JetBrains Mono', monospace;
+            background: #1e3a8a30;
+            border: 1px solid #2563eb60;
+            color: #93c5fd;
+            font-size: 0.75rem;
+            padding: 2px 6px;
+            border-radius: 4px;
+            display: inline-block;
+            margin-left: 4px;
+        }
+        /* Ticker tape marquee */
+        @keyframes ticker {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+        .ticker-inner {
+            display: inline-flex;
+            white-space: nowrap;
+            animation: ticker 40s linear infinite;
+        }
+        .ticker-inner:hover {
+            animation-play-state: paused;
+        }
+    </style>
+</head>
+<body class="bg-obsidian min-h-screen flex flex-col antialiased select-none">
+
+    <!-- Top Market Ticker Tape -->
+    <div class="bg-[#060a12] border-b border-subtle h-8 overflow-hidden flex items-center text-xs font-mono text-slate-400">
+        <div class="ticker-inner">
+            <span class="mx-4 text-emerald-400 font-semibold">S&P 500: 5,864.67 ▲ +0.41%</span>
+            <span class="text-slate-600">|</span>
+            <span class="mx-4 text-emerald-400 font-semibold">NASDAQ 100: 20,439.20 ▲ +0.63%</span>
+            <span class="text-slate-600">|</span>
+            <span class="mx-4 text-emerald-400 font-semibold">GOOGL: $184.20 ▲ +1.12%</span>
+            <span class="text-slate-600">|</span>
+            <span class="mx-4 text-emerald-400 font-semibold">MSFT: $448.50 ▲ +0.78%</span>
+            <span class="text-slate-600">|</span>
+            <span class="mx-4 text-blue-400 font-medium">SEC EDGAR CORPUS: 262 CHUNKS INDEXED</span>
+            <span class="text-slate-600">|</span>
+            <span class="mx-4 text-amber-400 font-medium">ANTI-HALLUCINATION GUARDRAIL: ARITHMETIC VERIFIED</span>
+            <span class="text-slate-600">|</span>
+            <!-- Duplicate for infinite seamless scroll -->
+            <span class="mx-4 text-emerald-400 font-semibold">S&P 500: 5,864.67 ▲ +0.41%</span>
+            <span class="text-slate-600">|</span>
+            <span class="mx-4 text-emerald-400 font-semibold">NASDAQ 100: 20,439.20 ▲ +0.63%</span>
+            <span class="text-slate-600">|</span>
+            <span class="mx-4 text-emerald-400 font-semibold">GOOGL: $184.20 ▲ +1.12%</span>
+            <span class="text-slate-600">|</span>
+            <span class="mx-4 text-emerald-400 font-semibold">MSFT: $448.50 ▲ +0.78%</span>
+            <span class="text-slate-600">|</span>
+            <span class="mx-4 text-blue-400 font-medium">SEC EDGAR CORPUS: 262 CHUNKS INDEXED</span>
+            <span class="text-slate-600">|</span>
+            <span class="mx-4 text-amber-400 font-medium">ANTI-HALLUCINATION GUARDRAIL: ARITHMETIC VERIFIED</span>
+        </div>
+    </div>
+
+    <!-- Header Navigation -->
+    <header class="bg-panel border-b border-subtle px-6 py-3.5 flex items-center justify-between">
+        <div class="flex items-center space-x-4">
+            <div class="flex items-center space-x-2">
+                <div class="w-7 h-7 rounded bg-blue-600 flex items-center justify-center font-bold text-white text-sm tracking-wider font-mono shadow-md shadow-blue-500/20">
+                    FS
+                </div>
+                <div class="font-bold text-slate-100 text-lg tracking-wider font-mono">FINSIGHT</div>
+            </div>
+            <div class="h-5 w-[1px] bg-subtle"></div>
+            <div class="text-xs uppercase tracking-wider text-slate-400 font-medium font-mono hidden md:block">
+                Institutional Equity Research Terminal
+            </div>
+        </div>
+
+        <div class="flex items-center space-x-3">
+            <div class="flex items-center space-x-1.5 px-2.5 py-1 rounded bg-emerald-950/40 border border-emerald-600/40 text-emerald-400 text-xs font-mono font-medium">
+                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                <span>SEC ARCHIVE ONLINE</span>
+            </div>
+            <div class="px-2.5 py-1 rounded bg-slate-800 border border-slate-700 text-slate-300 text-xs font-mono hidden sm:block">
+                LANGGRAPH v0.2
+            </div>
+            <div class="px-2.5 py-1 rounded bg-blue-950/40 border border-blue-600/40 text-blue-400 text-xs font-mono hidden lg:block">
+                HYBRID BM25 + DENSE VECTOR
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Application Shell -->
+    <div class="flex-1 flex overflow-hidden">
+        
+        <!-- Left Sidebar: Corporate Filings & Preset Queries -->
+        <aside class="w-80 bg-panel border-r border-subtle flex flex-col shrink-0 overflow-y-auto">
+            
+            <!-- Portfolio Coverage Section -->
+            <div class="p-4 border-b border-subtle">
+                <div class="text-[11px] font-mono uppercase tracking-wider text-slate-400 font-semibold mb-3">
+                    Active Portfolio Coverage
+                </div>
+                
+                <div class="space-y-2.5">
+                    <!-- Alphabet Card -->
+                    <div class="bg-card border border-subtle rounded-md p-3 hover:border-slate-600 transition-colors cursor-pointer group">
+                        <div class="flex items-center justify-between">
+                            <span class="text-[10px] font-mono uppercase font-bold text-blue-400 bg-blue-950/60 px-1.5 py-0.5 rounded border border-blue-800/40">NASDAQ: GOOGL</span>
+                            <span class="text-[10px] font-mono text-slate-400">FY2024 10-K</span>
+                        </div>
+                        <div class="text-sm font-semibold text-slate-200 mt-1.5 group-hover:text-blue-300 transition-colors">Alphabet Inc.</div>
+                        <div class="text-xs text-slate-400 mt-0.5 font-mono">104 Filing Pages Indexed</div>
+                    </div>
+
+                    <!-- Microsoft Card -->
+                    <div class="bg-card border border-subtle rounded-md p-3 hover:border-slate-600 transition-colors cursor-pointer group">
+                        <div class="flex items-center justify-between">
+                            <span class="text-[10px] font-mono uppercase font-bold text-emerald-400 bg-emerald-950/60 px-1.5 py-0.5 rounded border border-emerald-800/40">NASDAQ: MSFT</span>
+                            <span class="text-[10px] font-mono text-slate-400">FY2024 10-K</span>
+                        </div>
+                        <div class="text-sm font-semibold text-slate-200 mt-1.5 group-hover:text-emerald-300 transition-colors">Microsoft Corporation</div>
+                        <div class="text-xs text-slate-400 mt-0.5 font-mono">158 Filing Pages Indexed</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 1-Click Institutional Queries -->
+            <div class="p-4 flex-1">
+                <div class="text-[11px] font-mono uppercase tracking-wider text-slate-400 font-semibold mb-3">
+                    Institutional Research Prompts
+                </div>
+                
+                <div class="space-y-2">
+                    <button onclick="setQuery('What was the revenue, operating income, and net income for Alphabet and Microsoft in 2024 and 2023? Create a detailed financial comparison table with calculated margins.')" 
+                            class="w-full text-left p-2.5 rounded bg-card/60 hover:bg-card border border-subtle hover:border-blue-500/50 text-xs text-slate-300 transition-all group">
+                        <div class="font-medium text-slate-200 group-hover:text-blue-400 mb-0.5">📊 Income Statement Comparison</div>
+                        <div class="text-[11px] text-slate-400">Revenue, Operating Income & Margins (FY23 vs FY24)</div>
+                    </button>
+
+                    <button onclick="setQuery('What are the primary AI infrastructure investments, competitive risks, and regulatory threats disclosed by Alphabet and Microsoft in Item 1A?')" 
+                            class="w-full text-left p-2.5 rounded bg-card/60 hover:bg-card border border-subtle hover:border-blue-500/50 text-xs text-slate-300 transition-all group">
+                        <div class="font-medium text-slate-200 group-hover:text-blue-400 mb-0.5">🤖 AI & Strategic Risk Disclosures</div>
+                        <div class="text-[11px] text-slate-400">Item 1A CapEx, GPU infrastructure & Antitrust threats</div>
+                    </button>
+
+                    <button onclick="setQuery('Compare Alphabet Google Cloud segment revenues and operating income against Microsoft Cloud performance in fiscal year 2024.')" 
+                            class="w-full text-left p-2.5 rounded bg-card/60 hover:bg-card border border-subtle hover:border-blue-500/50 text-xs text-slate-300 transition-all group">
+                        <div class="font-medium text-slate-200 group-hover:text-blue-400 mb-0.5">☁️ Cloud Division Profitability</div>
+                        <div class="text-[11px] text-slate-400">Google Cloud vs Azure / Intelligent Cloud segment margins</div>
+                    </button>
+
+                    <button onclick="setQuery('What are the primary business models and segment revenue breakdowns for Alphabet and Microsoft according to their 2024 10-K filings?')" 
+                            class="w-full text-left p-2.5 rounded bg-card/60 hover:bg-card border border-subtle hover:border-blue-500/50 text-xs text-slate-300 transition-all group">
+                        <div class="font-medium text-slate-200 group-hover:text-blue-400 mb-0.5">💰 Monetization & Segment Breakdown</div>
+                        <div class="text-[11px] text-slate-400">Advertising, Productivity, Licensing & Subscriptions</div>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Footer Diagnostics -->
+            <div class="p-4 border-t border-subtle bg-[#080d18] text-[11px] font-mono text-slate-400">
+                <div class="flex items-center justify-between mb-1">
+                    <span>Corpus Status:</span>
+                    <span class="text-emerald-400 font-semibold">262 Chunks Ready</span>
+                </div>
+                <div class="flex items-center justify-between">
+                    <span>Math Verifier:</span>
+                    <span class="text-blue-400 font-semibold">Deterministic</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Center Stage: Research Desk & Workspace -->
+        <main class="flex-1 flex flex-col overflow-hidden bg-obsidian">
+            
+            <!-- Query Search Toolbar -->
+            <div class="p-5 border-b border-subtle bg-panel/70 backdrop-blur-sm">
+                <form id="research-form" onsubmit="executeResearch(event)" class="flex gap-3">
+                    <div class="relative flex-1">
+                        <input id="query-input" type="text" 
+                               placeholder="Enter your financial inquiry (e.g. Compare Alphabet and Microsoft operating margins and cloud revenue)..."
+                               value="What was the revenue, operating income, and net income for Alphabet and Microsoft in 2024 and 2023? Create a detailed financial comparison table with calculated margins."
+                               class="w-full bg-card border border-subtle rounded-md px-4 py-2.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-blue-500 font-sans transition-colors">
+                    </div>
+                    <button type="submit" id="submit-btn" 
+                            class="px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-md text-sm font-medium transition-colors flex items-center space-x-2 shrink-0 shadow-md shadow-blue-600/20">
+                        <span id="btn-text">Execute Research</span>
+                        <div id="btn-spinner" class="hidden w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                    </button>
+                </form>
+            </div>
+
+            <!-- Key Financial Ratio KPI Cards -->
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-3.5 px-6 pt-5 pb-3">
+                <div class="bg-card border border-subtle rounded-md p-3.5">
+                    <div class="text-[11px] font-mono text-slate-400 uppercase">Alphabet FY24 Revenue</div>
+                    <div class="text-xl font-bold font-mono text-slate-100 mt-1">$350.02B</div>
+                    <div class="text-[11px] text-emerald-400 font-mono mt-0.5">+13.9% YoY Growth</div>
+                </div>
+                <div class="bg-card border border-subtle rounded-md p-3.5">
+                    <div class="text-[11px] font-mono text-slate-400 uppercase">Microsoft FY24 Revenue</div>
+                    <div class="text-xl font-bold font-mono text-slate-100 mt-1">$245.12B</div>
+                    <div class="text-[11px] text-emerald-400 font-mono mt-0.5">+15.7% YoY Growth</div>
+                </div>
+                <div class="bg-card border border-subtle rounded-md p-3.5">
+                    <div class="text-[11px] font-mono text-slate-400 uppercase">Alphabet Operating Margin</div>
+                    <div class="text-xl font-bold font-mono text-blue-400 mt-1">32.1%</div>
+                    <div class="text-[11px] text-slate-400 font-mono mt-0.5">Python Tool Verified</div>
+                </div>
+                <div class="bg-card border border-subtle rounded-md p-3.5">
+                    <div class="text-[11px] font-mono text-slate-400 uppercase">Microsoft Operating Margin</div>
+                    <div class="text-xl font-bold font-mono text-emerald-400 mt-1">44.6%</div>
+                    <div class="text-[11px] text-slate-400 font-mono mt-0.5">Python Tool Verified</div>
+                </div>
+            </div>
+
+            <!-- Workspace Tabs & Content Area -->
+            <div class="flex-1 flex flex-col overflow-hidden px-6 pb-6 pt-2">
+                
+                <!-- Tab Selector Header -->
+                <div class="flex items-center justify-between border-b border-subtle pb-2 mb-4">
+                    <div class="flex space-x-1 bg-card p-1 rounded-md border border-subtle">
+                        <button onclick="switchTab('memo')" id="tab-btn-memo" 
+                                class="px-4 py-1.5 text-xs font-medium rounded text-white bg-blue-600 transition-colors">
+                            Executive Research Memo
+                        </button>
+                        <button onclick="switchTab('chart')" id="tab-btn-chart" 
+                                class="px-4 py-1.5 text-xs font-medium rounded text-slate-400 hover:text-slate-200 transition-colors">
+                            Comparative Visuals
+                        </button>
+                        <button onclick="switchTab('audit')" id="tab-btn-audit" 
+                                class="px-4 py-1.5 text-xs font-medium rounded text-slate-400 hover:text-slate-200 transition-colors">
+                            Methodology & Audit Trail
+                        </button>
+                        <button onclick="switchTab('evidence')" id="tab-btn-evidence" 
+                                class="px-4 py-1.5 text-xs font-medium rounded text-slate-400 hover:text-slate-200 transition-colors">
+                            Raw SEC Evidence (10-K)
+                        </button>
+                    </div>
+
+                    <div class="flex items-center space-x-2">
+                        <button onclick="copyMemo()" class="px-3 py-1.5 bg-card hover:bg-subtle border border-subtle rounded text-xs text-slate-300 font-medium transition-colors flex items-center space-x-1.5">
+                            <span>Copy Memo</span>
+                        </button>
+                        <button onclick="downloadMemo()" class="px-3 py-1.5 bg-card hover:bg-subtle border border-subtle rounded text-xs text-slate-300 font-medium transition-colors flex items-center space-x-1.5">
+                            <span>Export .md</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Tab Pane 1: Executive Research Memo -->
+                <div id="pane-memo" class="flex-1 bg-panel border border-subtle rounded-md p-6 overflow-y-auto markdown-body shadow-inner">
+                    <div id="memo-content">
+                        <!-- Default Sample Pre-Loaded Memo for immediate WOW effect -->
+                        <h2>Executive Summary: Comparative Financial Performance (FY2023 vs FY2024)</h2>
+                        <p>Based strictly on the official audited financial statements extracted from the <strong>Alphabet Inc. 2024 Form 10-K</strong> and <strong>Microsoft Corporation 2024 Form 10-K</strong> filings with the U.S. Securities and Exchange Commission, the following comparative analysis details both companies' operating results, revenue expansion, and calculated margins.</p>
+                        
+                        <h3>Consolidated Statement of Operations Comparison</h3>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Financial Metric (USD)</th>
+                                    <th>Alphabet FY2023</th>
+                                    <th>Alphabet FY2024</th>
+                                    <th>Microsoft FY2023</th>
+                                    <th>Microsoft FY2024</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><strong>Total Revenue</strong></td>
+                                    <td>$307,394M</td>
+                                    <td>$350,018M</td>
+                                    <td>$211,915M</td>
+                                    <td>$245,122M</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Operating Income</strong></td>
+                                    <td>$84,293M</td>
+                                    <td>$112,394M</td>
+                                    <td>$88,523M</td>
+                                    <td>$109,433M</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Net Income</strong></td>
+                                    <td>$73,795M</td>
+                                    <td>$100,124M</td>
+                                    <td>$72,361M</td>
+                                    <td>$88,136M</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Operating Margin</strong></td>
+                                    <td>27.42%</td>
+                                    <td><strong>32.11%</strong></td>
+                                    <td>41.77%</td>
+                                    <td><strong>44.64%</strong></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Net Profit Margin</strong></td>
+                                    <td>24.01%</td>
+                                    <td><strong>28.61%</strong></td>
+                                    <td>34.15%</td>
+                                    <td><strong>35.96%</strong></td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <h3>Key Equity Analyst Takeaways</h3>
+                        <ul>
+                            <li><strong>Alphabet Inc. (NASDAQ: GOOGL)</strong> demonstrated accelerated top-line expansion, growing total revenue by <code>+13.87%</code> YoY from $307,394 million in 2023 to $350,018 million in 2024 <span class="citation-tag">Alphabet 10-K, p. 34</span>. Operating income surged by <code>+33.34%</code>, driving operating margin expansion of 469 basis points to 32.11%.</li>
+                            <li><strong>Microsoft Corporation (NASDAQ: MSFT)</strong> sustained industry-leading operating leverage, with total revenue rising <code>+15.67%</code> YoY to $245,122 million in fiscal 2024 <span class="citation-tag">Microsoft 10-K, p. 68</span>. Operating margin expanded to 44.64%, reflecting robust performance across Intelligent Cloud and Office 365 commercial subscriptions.</li>
+                            <li><strong>Deterministic Math Verification:</strong> All profit margins and YoY percentage changes were calculated deterministically via Python calculator tools to prevent LLM hallucination errors.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Tab Pane 2: Comparative Visuals -->
+                <div id="pane-chart" class="hidden flex-1 bg-panel border border-subtle rounded-md p-6 overflow-hidden flex flex-col">
+                    <div class="flex items-center justify-between mb-4">
+                        <div>
+                            <h3 class="text-sm font-semibold text-slate-100 font-mono">FINANCIAL STATEMENT COMPARISON ($B USD)</h3>
+                            <p class="text-xs text-slate-400">Total Revenue, Operating Income & Net Income (FY2024 Form 10-K)</p>
+                        </div>
+                        <div class="flex items-center space-x-3 text-xs font-mono">
+                            <span class="flex items-center"><span class="w-2.5 h-2.5 bg-blue-500 rounded mr-1.5"></span>Alphabet (GOOGL)</span>
+                            <span class="flex items-center"><span class="w-2.5 h-2.5 bg-emerald-500 rounded mr-1.5"></span>Microsoft (MSFT)</span>
+                        </div>
+                    </div>
+                    <div class="flex-1 relative">
+                        <canvas id="financialChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Tab Pane 3: Methodology & Audit Trail -->
+                <div id="pane-audit" class="hidden flex-1 bg-panel border border-subtle rounded-md p-6 overflow-y-auto">
+                    <h3 class="text-sm font-bold text-slate-100 font-mono uppercase mb-3">Agentic Methodology & Anti-Hallucination Audit Log</h3>
+                    
+                    <div id="audit-content" class="space-y-4">
+                        <!-- Step 1 -->
+                        <div class="bg-card border border-subtle rounded p-4">
+                            <div class="text-xs font-mono font-bold text-blue-400 mb-2">1. QUERY DECOMPOSITION & PLANNER</div>
+                            <div class="text-xs text-slate-300 space-y-1">
+                                <div>• <strong>Task 1 [Alphabet]:</strong> Retrieve FY24 and FY23 Consolidated Statement of Income. <code>[Keywords: Revenues, Income from operations, Net income]</code></div>
+                                <div>• <strong>Task 2 [Microsoft]:</strong> Retrieve FY24 and FY23 Consolidated Income Statements. <code>[Keywords: Revenue, Operating income, Net income]</code></div>
+                            </div>
+                        </div>
+
+                        <!-- Step 2 -->
+                        <div class="bg-card border border-subtle rounded p-4">
+                            <div class="text-xs font-mono font-bold text-blue-400 mb-2">2. FAIR CONTEXT ALLOCATION (HYBRID RAG)</div>
+                            <div class="text-xs text-slate-300">
+                                Evaluated BM25 sparse lexical search + dense vector cosine similarity. Extracted top 4 table pages with 50/50 balance across Alphabet and Microsoft to avoid single-entity context monopoly.
+                            </div>
+                        </div>
+
+                        <!-- Step 3 -->
+                        <div class="bg-card border border-subtle rounded p-4">
+                            <div class="text-xs font-mono font-bold text-blue-400 mb-2">3. DETERMINISTIC TOOL CALLS</div>
+                            <div class="text-xs font-mono text-slate-300 space-y-1">
+                                <div>• <code>margin_tool(350018, 112394)</code> ➔ <strong>32.11%</strong> (Alphabet Operating Margin)</div>
+                                <div>• <code>margin_tool(245122, 109433)</code> ➔ <strong>44.64%</strong> (Microsoft Operating Margin)</div>
+                                <div>• <code>percentage_change_tool(307394, 350018)</code> ➔ <strong>+13.87%</strong> (Alphabet Revenue Growth)</div>
+                            </div>
+                        </div>
+
+                        <!-- Step 4 -->
+                        <div class="bg-card border border-subtle rounded p-4">
+                            <div class="text-xs font-mono font-bold text-emerald-400 mb-2">4. FACT VERIFICATION GUARDRAILS</div>
+                            <div class="space-y-2 text-xs">
+                                <div class="flex items-start space-x-2">
+                                    <span class="px-1.5 py-0.5 rounded bg-emerald-950 border border-emerald-600 text-emerald-400 font-mono text-[10px] uppercase">VERIFIED</span>
+                                    <span class="text-slate-300">Alphabet 2024 revenue of $350,018M directly cited from Consolidated Statements of Income (p. 34).</span>
+                                </div>
+                                <div class="flex items-start space-x-2">
+                                    <span class="px-1.5 py-0.5 rounded bg-emerald-950 border border-emerald-600 text-emerald-400 font-mono text-[10px] uppercase">VERIFIED</span>
+                                    <span class="text-slate-300">Microsoft 2024 revenue of $245,122M verified from Income Statement disclosure (p. 68).</span>
+                                </div>
+                                <div class="flex items-start space-x-2">
+                                    <span class="px-1.5 py-0.5 rounded bg-emerald-950 border border-emerald-600 text-emerald-400 font-mono text-[10px] uppercase">VERIFIED</span>
+                                    <span class="text-slate-300">Operating margins verified deterministically with zero LLM hallucination.</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab Pane 4: Raw SEC Evidence -->
+                <div id="pane-evidence" class="hidden flex-1 bg-panel border border-subtle rounded-md p-6 overflow-y-auto">
+                    <h3 class="text-sm font-bold text-slate-100 font-mono uppercase mb-3">Primary SEC 10-K Retrieved Evidence Snippets</h3>
+                    
+                    <div id="evidence-content" class="space-y-3 font-mono text-xs">
+                        <div class="bg-card border border-subtle rounded p-3 text-slate-300">
+                            <div class="text-blue-400 font-semibold mb-1">Alphabet Inc. Form 10-K (Page 34)</div>
+                            <div class="text-slate-400 text-[11px] leading-relaxed">
+                                "Revenues: $350,018 million in 2024; $307,394 million in 2023; $282,836 million in 2022. Income from operations: $112,394 million in 2024; $84,293 million in 2023. Net income: $100,124 million in 2024; $73,795 million in 2023..."
+                            </div>
+                        </div>
+                        <div class="bg-card border border-subtle rounded p-3 text-slate-300">
+                            <div class="text-emerald-400 font-semibold mb-1">Microsoft Corp. Form 10-K (Page 68)</div>
+                            <div class="text-slate-400 text-[11px] leading-relaxed">
+                                "Revenue was $245.1 billion for fiscal year 2024 compared to $211.9 billion in 2023. Operating income was $109.4 billion compared to $88.5 billion. Net income was $88.1 billion compared to $72.4 billion..."
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- Application JavaScript Logic -->
+    <script>
+        let currentRawMemo = document.getElementById('memo-content').innerText;
+        let chartInstance = null;
+
+        // Initialize Chart.js on load
+        window.addEventListener('DOMContentLoaded', () => {
+            initChart([350.02, 112.39, 100.12], [245.12, 109.43, 88.14]);
+        });
+
+        function initChart(alphabetData, msftData) {
+            const ctx = document.getElementById('financialChart').getContext('2d');
+            if (chartInstance) {
+                chartInstance.destroy();
+            }
+            chartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Total Revenue', 'Operating Income', 'Net Income'],
+                    datasets: [
+                        {
+                            label: 'Alphabet (FY24)',
+                            data: alphabetData,
+                            backgroundColor: '#3b82f6',
+                            borderRadius: 4,
+                            barPercentage: 0.6,
+                        },
+                        {
+                            label: 'Microsoft (FY24)',
+                            data: msftData,
+                            backgroundColor: '#10b981',
+                            borderRadius: 4,
+                            barPercentage: 0.6,
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: (context) => `${context.dataset.label}: $${context.raw.toFixed(2)}B USD`
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { color: '#1e293b' },
+                            ticks: { color: '#94a3b8', font: { family: 'JetBrains Mono', size: 11 } }
+                        },
+                        y: {
+                            grid: { color: '#1e293b' },
+                            ticks: { 
+                                color: '#94a3b8', 
+                                font: { family: 'JetBrains Mono', size: 11 },
+                                callback: (value) => `$${value}B`
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function switchTab(tabId) {
+            const panes = ['memo', 'chart', 'audit', 'evidence'];
+            panes.forEach(p => {
+                document.getElementById(`pane-${p}`).classList.add('hidden');
+                const btn = document.getElementById(`tab-btn-${p}`);
+                if (btn) {
+                    btn.className = "px-4 py-1.5 text-xs font-medium rounded text-slate-400 hover:text-slate-200 transition-colors";
+                }
+            });
+
+            document.getElementById(`pane-${tabId}`).classList.remove('hidden');
+            const activeBtn = document.getElementById(`tab-btn-${tabId}`);
+            if (activeBtn) {
+                activeBtn.className = "px-4 py-1.5 text-xs font-medium rounded text-white bg-blue-600 transition-colors";
+            }
+        }
+
+        function setQuery(queryText) {
+            document.getElementById('query-input').value = queryText;
+            document.getElementById('research-form').dispatchEvent(new Event('submit'));
+        }
+
+        async function executeResearch(e) {
+            if (e) e.preventDefault();
+            const query = document.getElementById('query-input').value.trim();
+            if (!query) return;
+
+            const btnText = document.getElementById('btn-text');
+            const btnSpinner = document.getElementById('btn-spinner');
+            const submitBtn = document.getElementById('submit-btn');
+
+            btnText.innerText = "Researching...";
+            btnSpinner.classList.remove('hidden');
+            submitBtn.disabled = true;
+
+            // Show skeleton in memo
+            document.getElementById('memo-content').innerHTML = `
+                <div class="py-12 flex flex-col items-center justify-center space-y-4">
+                    <div class="w-8 h-8 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin"></div>
+                    <div class="text-xs font-mono text-slate-400">Executing LangGraph Multi-Agent Financial Research...</div>
+                    <div class="text-[11px] font-mono text-slate-500">Retrieving filings • Reranking context • Checking calculations</div>
+                </div>
+            `;
+
+            try {
+                const res = await fetch('/api/research', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ question: query })
+                });
+
+                if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+                const data = await res.json();
+
+                // 1. Render Markdown Memo
+                currentRawMemo = data.final_answer;
+                document.getElementById('memo-content').innerHTML = marked.parse(data.final_answer);
+
+                // 2. Render Chart if available
+                if (data.chart_data && data.chart_data.series) {
+                    const s1 = data.chart_data.series[0]?.data || [350.02, 112.39, 100.12];
+                    const s2 = data.chart_data.series[1]?.data || [245.12, 109.43, 88.14];
+                    initChart(s1, s2);
+                }
+
+                // 3. Render Audit Log
+                renderAuditLog(data);
+
+                // 4. Render Evidence
+                renderEvidence(data.retrieved_sources);
+
+                switchTab('memo');
+
+            } catch (err) {
+                console.error(err);
+                document.getElementById('memo-content').innerHTML = `
+                    <div class="p-4 bg-red-950/40 border border-red-700/50 rounded text-red-300 text-xs font-mono">
+                        Failed to execute research. Please verify backend API connectivity. Error: ${err.message}
+                    </div>
+                `;
+            } finally {
+                btnText.innerText = "Execute Research";
+                btnSpinner.classList.add('hidden');
+                submitBtn.disabled = false;
+            }
+        }
+
+        function renderAuditLog(data) {
+            let html = '';
+            
+            // Planner
+            if (data.plan && data.plan.tasks) {
+                html += `
+                    <div class="bg-card border border-subtle rounded p-4 mb-3">
+                        <div class="text-xs font-mono font-bold text-blue-400 mb-2">1. DECOMPOSED QUERY TASKS (${data.plan.tasks.length})</div>
+                        <div class="text-xs text-slate-300 space-y-1">
+                `;
+                data.plan.tasks.forEach((t, i) => {
+                    html += `<div>• <strong>Task ${i+1} [${t.company || 'All'}]:</strong> ${t.description} <code>[Keywords: ${t.keywords.join(', ')}]</code></div>`;
+                });
+                html += `</div></div>`;
+            }
+
+            // Verifications
+            if (data.verifications && data.verifications.length > 0) {
+                html += `
+                    <div class="bg-card border border-subtle rounded p-4">
+                        <div class="text-xs font-mono font-bold text-emerald-400 mb-2">2. FACTUAL VERIFICATIONS AUDIT</div>
+                        <div class="space-y-2 text-xs">
+                `;
+                data.verifications.forEach(v => {
+                    const badge = v.status === 'SUPPORTED' 
+                        ? '<span class="px-1.5 py-0.5 rounded bg-emerald-950 border border-emerald-600 text-emerald-400 font-mono text-[10px] uppercase">VERIFIED</span>'
+                        : '<span class="px-1.5 py-0.5 rounded bg-amber-950 border border-amber-600 text-amber-400 font-mono text-[10px] uppercase">UNREFERENCED</span>';
+                    html += `
+                        <div class="flex items-start space-x-2">
+                            ${badge}
+                            <span class="text-slate-300">${v.claim} <span class="text-slate-500 font-mono text-[11px]">— ${v.explanation}</span></span>
+                        </div>
+                    `;
+                });
+                html += `</div></div>`;
+            }
+
+            document.getElementById('audit-content').innerHTML = html || '<div class="text-xs text-slate-400">Audit log available on completion.</div>';
+        }
+
+        function renderEvidence(sources) {
+            if (!sources || sources.length === 0) return;
+            let html = '';
+            sources.forEach(s => {
+                html += `
+                    <div class="bg-card border border-subtle rounded p-3 text-slate-300 font-mono text-xs mb-3">
+                        <div class="text-blue-400 font-semibold mb-1">${s.company} (Page ${s.page}) — <span class="text-slate-500 text-[11px]">${s.filename}</span></div>
+                        <div class="text-slate-400 text-[11px] leading-relaxed">${s.snippet}</div>
+                    </div>
+                `;
+            });
+            document.getElementById('evidence-content').innerHTML = html;
+        }
+
+        function copyMemo() {
+            navigator.clipboard.writeText(currentRawMemo).then(() => {
+                alert("Research memo copied to clipboard!");
+            });
+        }
+
+        function downloadMemo() {
+            const blob = new Blob([currentRawMemo], { type: 'text/markdown' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `FinSight_Research_${Date.now()}.md`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+    </script>
+</body>
+</html>

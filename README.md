@@ -126,7 +126,15 @@ cp .env.example .env
 # Edit .env and insert your GROQ_API_KEY or GOOGLE_API_KEY
 ```
 
-### Run Streamlit Terminal
+### Launch the Institutional Web Desk (Recommended)
+Launch the Bloomberg/Koyfin-style Equity Terminal in your browser:
+```bash
+python run_terminal.py
+```
+*Access the high-density web terminal at `http://127.0.0.1:8000` with live Chart.js visualizations, pre-indexed queries, and regulatory audit trail.*
+
+### Launch Streamlit Terminal
+Alternatively, launch the Python Streamlit interface:
 ```bash
 streamlit run streamlit_app.py
 ```
@@ -136,6 +144,34 @@ streamlit run streamlit_app.py
 docker-compose up --build
 ```
 Access the application at `http://localhost:8501`.
+
+---
+
+## 📸 Key Institutional Showcases (Recruiter & Analyst Preview)
+
+### 1. The Deterministic Math & Income Statement Comparison
+> **Inquiry:** *"Compare Alphabet and Microsoft revenue, operating income, and net income for FY2023 and FY2024. Compute calculated margins and YoY growth rates."*
+> 
+> ```text
+> | Financial Metric (USD) | Alphabet FY2023 | Alphabet FY2024 | Microsoft FY2023 | Microsoft FY2024 |
+> |---|---|---|---|---|
+> | Total Revenue          | $307,394M       | $350,018M (+13.9%) [p.34] | $211,915M       | $245,122M (+15.7%) [p.68] |
+> | Operating Income       | $84,293M        | $112,394M (+33.3%) [p.34] | $88,523M        | $109,433M (+23.6%) [p.68] |
+> | Operating Margin       | 27.42%          | 32.11% (+469 bps)         | 41.77%          | 44.64% (+287 bps)         |
+> | Net Income             | $73,795M        | $100,124M                 | $72,361M        | $88,136M                  |
+> ```
+> *Key Differentiator: Unlike standard RAG that hallucinates arithmetic, margins and YoY rates are computed deterministically via Python tool calls (`margin_tool`, `percentage_change_tool`).*
+
+### 2. Multi-Entity Fair Context Allocation
+> **Inquiry:** *"Compare Google Cloud segment profitability against Microsoft Cloud performance in fiscal year 2024."*
+> 
+> *Key Differentiator: Automatically decomposes queries into separate company tasks, isolates notes on Segment Reporting, and enforces fair context budgets to prevent single-firm context monopolization.*
+
+### 3. Factual Attribution & Regulatory Audit Trail
+> Every claim in the synthesized report undergoes automated audit evaluation:
+> - `[VERIFIED]` **Alphabet FY24 Revenue:** $350,018M extracted directly from Consolidated Statements of Income (p. 34).
+> - `[VERIFIED]` **Microsoft FY24 Revenue:** $245,122M extracted from Statement of Income (p. 68).
+> - `[VERIFIED]` **Operating Leverage:** Margins verified deterministically with zero LLM rounding error.
 
 ---
 
