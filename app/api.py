@@ -5,7 +5,7 @@ from typing import Dict, Any, List, Optional
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, Response
 from pydantic import BaseModel
 
 from app.graph.workflow import app_graph
@@ -17,6 +17,11 @@ app = FastAPI(
     description="Enterprise SEC Form 10-K Agentic Intelligence Engine",
     version="2.0.0"
 )
+
+@app.get("/favicon.ico")
+def get_favicon():
+    svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="6" fill="#2563eb"/><path d="M8 22v-6m8 6v-12m8 12v-16" stroke="#ffffff" stroke-width="3" stroke-linecap="round"/></svg>'
+    return Response(content=svg, media_type="image/svg+xml")
 
 app.add_middleware(
     CORSMiddleware,
