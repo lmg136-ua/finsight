@@ -1,4 +1,4 @@
-# FinSight — Enterprise Agentic Financial Research Assistant 📈
+# FinSight — Enterprise Agentic Financial Research Assistant
 
 [![CI Pipeline](https://github.com/lmg136-ua/finsight/actions/workflows/ci.yml/badge.svg)](https://github.com/lmg136-ua/finsight/actions/workflows/ci.yml)
 [![Python Version](https://img.shields.io/badge/python-3.11%20%7C%203.12-blue.svg)](https://www.python.org/)
@@ -12,7 +12,7 @@ FinSight is a production-grade **Agentic AI Financial Research Assistant** engin
 
 ---
 
-## 📌 Executive Summary & Problem Statement
+## Executive Summary & Problem Statement
 
 Financial analysts and investment researchers spend hours navigating dense, 100+ page SEC annual filings (10-K) to compare competitors, extract financial ratios, and evaluate risk factors. 
 
@@ -26,7 +26,7 @@ FinSight addresses these problems with an **institutional-grade multi-agent arch
 
 ---
 
-## 🏛️ Enterprise Agentic Architecture
+## Enterprise Agentic Architecture
 
 ```mermaid
 flowchart TD
@@ -74,16 +74,16 @@ flowchart TD
 
 ---
 
-## 🚀 Key Engineering Highlights
+## Key Engineering Highlights
 
-- **⚡ Lazy-Loaded Zero-Overhead Imports:** Singleton proxy architecture eliminates PyTorch cold-start lags during module imports; the test suite runs in seconds.
-- **🛡️ Free-Tier TPM Rate-Limit Guardrail:** Token budget optimization ensures full multi-agent runs operate comfortably within Groq and Gemini free-tier limits.
-- **🔍 Smart SEC Header Filtering:** Robust heuristic distinguishes legitimate filing pages from bare index pages, preventing erroneous document dropping.
-- **📈 1-Click Interactive Streamlit Demo:** Built-in demo mode with pre-indexed Alphabet and Microsoft 2024 Form 10-K filings allows recruiters and evaluators to test the system immediately without downloading SEC PDFs.
+- **Lazy-Loaded Zero-Overhead Imports:** Singleton proxy architecture eliminates PyTorch cold-start lags during module imports; the test suite runs in seconds.
+- **Rate-Limit Guardrail:** Token budget optimization ensures full multi-agent runs operate comfortably within free-tier and production LLM limits.
+- **Smart SEC Header Filtering:** Robust heuristic distinguishes legitimate filing pages from bare index pages, preventing erroneous document dropping.
+- **Institutional Web Terminal & Streamlit:** High-density Bloomberg-style web desk alongside Streamlit terminal with pre-indexed Alphabet and Microsoft 2024 Form 10-K filings.
 
 ---
 
-## 🛠️ Technology Stack
+## Technology Stack
 
 | Layer | Technology |
 |---|---|
@@ -93,12 +93,12 @@ flowchart TD
 | **Hybrid Search** | `rank_bm25` (Sparse) + Dense Vector Cosine Similarity |
 | **Local Embeddings** | SentenceTransformers (`all-MiniLM-L6-v2`) |
 | **PDF Extraction** | PyMuPDF (`fitz`) |
-| **Frontend UI** | Streamlit, Plotly Interactive Visuals |
+| **Frontend UI** | Institutional Web Terminal (FastAPI + Tailwind), Streamlit Terminal |
 | **Testing & CI/CD** | PyTest (13 tests, 100% pass), GitHub Actions |
 
 ---
 
-## 💻 Quickstart & Installation
+## Quickstart & Installation
 
 ### Prerequisites
 - Python 3.11 or 3.12
@@ -147,7 +147,7 @@ Access the application at `http://localhost:8501`.
 
 ---
 
-## 📸 Key Institutional Showcases (Recruiter & Analyst Preview)
+## Key Institutional Showcases (Recruiter & Analyst Preview)
 
 ### 1. The Deterministic Math & Income Statement Comparison
 > **Inquiry:** *"Compare Alphabet and Microsoft revenue, operating income, and net income for FY2023 and FY2024. Compute calculated margins and YoY growth rates."*
@@ -175,7 +175,7 @@ Access the application at `http://localhost:8501`.
 
 ---
 
-## 🧪 Testing & Verification Suite
+## Testing & Verification Suite
 
 FinSight includes a comprehensive PyTest suite covering data ingestion, vector search, financial calculations, state transitions, query planning, and verification:
 
@@ -205,7 +205,7 @@ python evaluation/evaluate.py
 
 ---
 
-## 📊 Benchmark & Evaluation Results
+## Benchmark & Evaluation Results
 
 Evaluated on SEC 10-K filings corpus (Alphabet Inc. and Microsoft Corp.):
 
@@ -218,7 +218,7 @@ Evaluated on SEC 10-K filings corpus (Alphabet Inc. and Microsoft Corp.):
 
 ---
 
-## 📁 Repository Structure
+## Repository Structure
 
 ```text
 finsight/
@@ -241,6 +241,9 @@ finsight/
 │   │   └── retriever.py         # Hybrid Dense + BM25 retriever with fair reranking
 │   ├── tools/
 │   │   └── financial_calculator.py # Deterministic math tools (YoY, Margin, CAGR)
+│   ├── api.py                   # High-performance FastAPI server
+│   ├── static/
+│   │   └── index.html           # Institutional Equity Research Web Desk
 │   └── config.py                # Environment configuration loader
 ├── chroma_db/                   # Pre-indexed SQLite vector database
 ├── evaluation/
@@ -260,12 +263,13 @@ finsight/
 ├── docker-compose.yml           # Docker Compose deployment configuration
 ├── Dockerfile                   # Production Dockerfile
 ├── requirements.txt             # Clean Python dependency list
+├── run_terminal.py              # 1-Click Institutional Terminal Launcher
 ├── streamlit_app.py             # Enterprise Streamlit Financial Terminal
 └── README.md                    # Project documentation
 ```
 
 ---
 
-## 📜 License
+## License
 
 Distributed under the MIT License. See [LICENSE](LICENSE) for more information.
